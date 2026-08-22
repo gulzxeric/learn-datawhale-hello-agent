@@ -1,0 +1,8 @@
+# 密钥 —— 绝不提交
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
