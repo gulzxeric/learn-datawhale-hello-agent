@@ -1,8 +1,43 @@
 import re
 import random
 
+# 上下文记忆库：用于存储提取的用户关键信息
+context_memory = {
+    "name": None,
+    "age": None,
+    "occupation": None,
+    "hobby": None
+}
+
 # 定义规则库:模式(正则表达式) -> 响应模板列表
 rules = {
+    # 上下文提取规则（姓名、年龄、职业）
+    r'.*my name is ([a-zA-Z]+).*': [
+        "Nice to meet you, {0}. How can I help you today?",
+        "Hello {0}! I'll keep your name in mind. What would you like to discuss?"
+    ],
+    r'.*i am (\d+) years old.*': [
+        "Got it, you are {0} years old. How do you feel about this stage of your life?",
+        "Being {0} brings unique experiences. What's currently on your mind?"
+    ],
+    r'.*i work as a (.*)|.*i am a (.*)': [
+        "Working as a {0} sounds interesting. Do you find your work fulfilling?",
+        "How long have you been a {0}?"
+    ],
+
+    # 场景扩展规则（谈论工作、学习、爱好）
+    r'.*my job (.*)|.*work is (.*)': [
+        "Work can occupy a lot of our mental space. How is your work environment?",
+        "What is the most challenging part about your job?"
+    ],
+    r'.*i am studying (.*)|.*i study (.*)': [
+        "What motivated you to study {0}?",
+        "Does studying {0} bring you more excitement or pressure?"
+    ],
+    r'.*i like (.*)|.*i enjoy (.*)': [
+        "That sounds like a fun pastime! How long have you enjoyed {0}?",
+        "What makes {0} so special to you?"
+    ],
     r'I need (.*)': [
         "Why do you need {0}?",
         "Would it really help you to get {0}?",
@@ -56,21 +91,53 @@ def swap_pronouns(phrase):
     swapped_words = [pronoun_swap.get(word, word) for word in words]
     return " ".join(swapped_words)
 
+def update_context(user_input):
+    """提取并持久化用户对话中的关键实体信息"""
+    name_m = re.search(r'my name is ([a-zA-Z]+)', user_input, re.IGNORECASE)
+    if name_m: context_memory["name"] = name_m.group(1).capitalize()
+
+    age_m = re.search(r'i am (\d+) years old', user_input, re.IGNORECASE)
+    if age_m: context_memory["age"] = age_m.group(1)
+
+    job_m = re.search(r'(?:work as a|i am a) ([a-zA-Z\s]+)', user_input, re.IGNORECASE)
+    if job_m and not job_m.group(1).strip().isdigit():
+        context_memory["occupation"] = job_m.group(1).strip()
+
+    hobby_m = re.search(r'i (?:like|enjoy) (.*)', user_input, re.IGNORECASE)
+    if hobby_m: context_memory["hobby"] = hobby_m.group(1).strip()
+
 def respond(user_input):
-    """
-    根据规则库生成响应
-    """
+    update_context(user_input)
+    
     for pattern, responses in rules.items():
         match = re.search(pattern, user_input, re.IGNORECASE)
         if match:
-            # 捕获匹配到的部分
-            captured_group = match.group(1) if match.groups() else ''
-            # 进行代词转换
+            # 搜寻非空的捕获组
+            captured_group = ""
+            if match.groups():
+                for g in match.groups():
+                    if g:
+                        captured_group = g
+                        break
+            
             swapped_group = swap_pronouns(captured_group)
-            # 从模板中随机选择一个并格式化
-            response = random.choice(responses).format(swapped_group)
+            response = random.choice(responses)
+            if "{0}" in response:
+                response = response.format(swapped_group)
+            
+            # 概率性（30%）主动唤起上下文记忆，增加人性化关联
+            if random.random() < 0.30 and pattern != r'.*':
+                if context_memory["name"] and "Nice to meet you" not in response:
+                    response = f"{context_memory['name']}, " + response[0].lower() + response[1:]
+                elif context_memory["occupation"]:
+                    response += f" (Does this relate to your work as a {context_memory['occupation']}?)"
             return response
-    # 如果没有匹配任何特定规则，使用最后的通配符规则
+
+    # 兜底情况：若触发通配符且拥有记忆，优先引用记忆
+    if any(context_memory.values()):
+        memories = [f"{k}: {v}" for k, v in context_memory.items() if v]
+        return f"Earlier you mentioned {random.choice(memories)}. How does that connect to what you're saying now?"
+
     return random.choice(rules[r'.*'])
 
 # 主聊天循环
