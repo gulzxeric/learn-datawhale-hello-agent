@@ -1,0 +1,27 @@
+# 密钥 —— 绝不提交
+.env
+
+# 私人日记数据 —— 绝不提交
+日记/
+diary_data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# 运行产物（memory_cache 是从私人日记生成的摘要，同样属于隐私）
+memory_cache/
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+chroma_db/
+langgraph_store/
+
+# 私人评测题（含真实人名/日期）——evals.py 只提交模板，真实用例留本地
+src/agent/evals_local.py
+
+# 系统
+.DS_Store
+Thumbs.db
