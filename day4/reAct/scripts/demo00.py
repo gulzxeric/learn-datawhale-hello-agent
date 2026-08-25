@@ -9,6 +9,7 @@ sys.path.append(project_root)
 from day4.reAct.llm import HelloAgentsLLM
 from day4.reAct.tools.toolExcuter import ToolExecutor
 from day4.reAct.tools.search import search
+from day4.reAct.tools.calculator import calculate
 
 # ReAct 提示词模板
 REACT_PROMPT_TEMPLATE = """
@@ -77,6 +78,12 @@ class ReActAgent:
                 print(f"思考: {thought}")
 
             if not action:
+                # 兜底:模型有时会省略 Action: 前缀而直接输出 Finish[最终答案]
+                finish_match = re.search(r"Finish\[(.*)\]", response_text)
+                if finish_match:
+                    final_answer = finish_match.group(1)
+                    print(f"🎉 最终答案: {final_answer}")
+                    return final_answer
                 print("警告:未能解析出有效的Action，流程终止。")
                 break
 
@@ -117,8 +124,8 @@ class ReActAgent:
         """解析LLM的输出，提取Thought和Action。"""
         # Thought: 匹配到 Action: 或文本末尾
         thought_match = re.search(r"Thought:\s*(.*?)(?=\nAction:|$)", text, re.DOTALL)
-        # Action: 匹配到文本末尾
-        action_match = re.search(r"Action:\s*(.*?)$", text, re.DOTALL)
+        # Action: 只匹配当前行，避免把后续的 Finish/Observation 行一并当作工具输入
+        action_match = re.search(r"Action:[ \t]*(.*)", text)
         thought = thought_match.group(1).strip() if thought_match else None
         action = action_match.group(1).strip() if action_match else None
         return thought, action
@@ -135,6 +142,8 @@ if __name__ == '__main__':
     tool_executor = ToolExecutor()
     search_desc = "一个网页搜索引擎。当你需要回答关于时事、事实以及在你的知识库中找不到的信息时，应使用此工具。"
     tool_executor.registerTool("Search", search_desc, search)
+    calculator_desc = "一个精确的数学计算器。当需要进行加减乘除、幂运算等复杂数值计算时应使用此工具，输入为合法的数学表达式，例如 (123+456)*789/12。"
+    tool_executor.registerTool("Calculator", calculator_desc, calculate)
     agent = ReActAgent(llm_client=llm, tool_executor=tool_executor)
-    question = "华为最新的手机是哪一款？它的主要卖点是什么？"
+    question = "计算 (123 + 456) × 789 / 12 = ? 的结果"
     agent.run(question)
