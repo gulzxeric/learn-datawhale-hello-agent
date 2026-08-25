@@ -3,11 +3,12 @@ import re
 import sys
 
 # 将 day4 目录加入 Python 搜索路径
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(project_root)
 
-from llm import HelloAgentsLLM
-from tools.toolExcuter import ToolExecutor
-from tools.search import search
+from day4.reAct.llm import HelloAgentsLLM
+from day4.reAct.tools.toolExcuter import ToolExecutor
+from day4.reAct.tools.search import search
 
 # ReAct 提示词模板
 REACT_PROMPT_TEMPLATE = """

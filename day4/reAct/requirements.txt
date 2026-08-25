@@ -1,0 +1,11 @@
+# Day4 - Hello Agents：LLM 客户端与工具依赖
+# 安装: python -m pip install --no-deps -r requirements.txt
+
+# LLM 调用 SDK（OpenAI 兼容接口）
+openai>=2.0.0
+
+# 从 .env 文件加载环境变量（API Key 等）
+python-dotenv>=1.0.0
+
+# SerpApi 网页搜索客户端（提供 serpapi 模块；requests 会自动作为依赖装入）
+google-search-results==2.4.2
