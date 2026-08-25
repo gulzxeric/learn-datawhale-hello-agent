@@ -1,4 +1,5 @@
-from typing import Dict, Any
+import difflib
+from typing import Dict, Any, Optional
 
 class ToolExecutor:
     """
@@ -27,6 +28,14 @@ class ToolExecutor:
         获取所有可用工具的格式化描述字符串。
         """
         return "\n".join([
-            f"- {name}: {info['description']}" 
+            f"- {name}: {info['description']}"
             for name, info in self.tools.items()
         ])
+
+    def suggestTool(self, name: str) -> Optional[str]:
+        """
+        当智能体调用了不存在的工具时，模糊匹配出最相似的已注册工具名，
+        用于生成纠错提示（例如 'Caculator' -> 'Calculator'）。
+        """
+        matches = difflib.get_close_matches(name, self.tools.keys(), n=1, cutoff=0.6)
+        return matches[0] if matches else None
